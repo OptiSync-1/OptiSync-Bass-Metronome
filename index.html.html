@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Bass Metronome</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --card: #1f2937;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --accent: #60a5fa;
+      --accent-2: #2563eb;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+    }
+
+    .app {
+      width: min(720px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(28px, 5vw, 42px);
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .subtitle {
+      margin: 0 0 28px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .tempo-row {
+      display: grid;
+      grid-template-columns: 56px 1fr 56px;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .step-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 30px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .step-btn:active { transform: translateY(1px); }
+
+    .tempo-display {
+      text-align: center;
+      min-width: 0;
+    }
+
+    .tempo-number {
+      font-size: clamp(48px, 10vw, 72px);
+      line-height: 1;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .value-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .big-value {
+      font-size: 34px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      max-width: 260px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      height: 32px;
+      cursor: pointer;
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 50px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      padding: 0 14px;
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .description {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      color: #dbeafe;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .volume-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .start {
+      width: 100%;
+      min-height: 62px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--accent-2);
+      color: white;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .start.running {
+      background: var(--danger);
+    }
+
+    .status {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 18px;
+    }
+
+    button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 65%, transparent);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 420px) {
+      body { padding-inline: 12px; }
+      .section { padding: 16px; }
+      .tempo-row { grid-template-columns: 52px 1fr 52px; gap: 10px; }
+      .step-btn { width: 52px; height: 52px; }
+      .small-note { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Bass Metronome</h1>
+    <section class="section">
+      <div class="section-title">Tempo</div>
+      <div class="tempo-row">
+        <button id="minus" class="step-btn" type="button" aria-label="Decrease BPM by 1">−</button>
+
+        <div class="tempo-display">
+          <div id="bpmValue" class="tempo-number">100</div>
+          <div class="unit">BPM</div>
+        </div>
+
+        <button id="plus" class="step-btn" type="button" aria-label="Increase BPM by 1">+</button>
+      </div>
+
+      <input id="bpmSlider" type="range" min="12" max="200" step="1" value="100" aria-label="Tempo in BPM">
+      <div class="range-labels"><span>12</span><span>200</span></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Frequency</div>
+      <div class="value-line">
+        <div>
+          <div class="big-value"><span id="hzValue">50</span> Hz</div>
+        </div>
+        <div class="small-note">Lower number = more bass</div>
+      </div>
+
+      <input id="hzSlider" type="range" min="20" max="200" step="1" value="50" aria-label="Bass frequency">
+      <div class="range-labels"><span>20 Hz</span><span>200 Hz</span></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Sound Shape</div>
+
+      <select id="soundSelect">
+        <option value="ultra">Ultra Smooth — 16 cycles</option>
+        <option value="smooth">Smooth — 12 cycles</option>
+        <option value="balanced">Balanced — 8 cycles</option>
+        <option value="short">Short — 5 cycles</option>
+        <option value="softflat">Soft Center — 10 cycles</option>
+      </select>
+
+    </section>
+
+    <section class="section">
+      <div class="volume-row">
+        <div class="section-title" style="margin:0">Volume</div>
+        <div><span id="volumeValue">60</span>%</div>
+      </div>
+
+      <input id="volumeSlider" type="range" min="5" max="100" step="1" value="60" aria-label="Output level">
+    </section>
+
+    <button id="startButton" class="start" type="button">Start Metronome</button>
+    <div id="status" class="status" aria-live="polite">100 BPM · 50 Hz · Ultra Smooth</div>
+
+    <div class="footer-note">
+      For best results, use an external speaker or headphones.
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const bpmValue = document.getElementById('bpmValue');
+      const bpmSlider = document.getElementById('bpmSlider');
+      const minus = document.getElementById('minus');
+      const plus = document.getElementById('plus');
+
+      const hzValue = document.getElementById('hzValue');
+      const hzSlider = document.getElementById('hzSlider');
+
+      const soundSelect = document.getElementById('soundSelect');
+      const volumeSlider = document.getElementById('volumeSlider');
+      const volumeValue = document.getElementById('volumeValue');
+
+      const startButton = document.getElementById('startButton');
+      const status = document.getElementById('status');
+
+      let bpm = 100;
+      let hz = 50;
+      let volume = 0.60;
+
+      let running = false;
+      let audioContext = null;
+      let masterGain = null;
+      let schedulerTimer = null;
+      let nextBeatTime = 0;
+
+      const presets = {
+        ultra: {
+          cycles: 16,
+          name: 'Ultra Smooth',
+          envelope: 'hann',
+          description: '<strong>Ultra Smooth:</strong> 16 complete cycles with a raised-cosine envelope for the gentlest onset and release.'
+        },
+        smooth: {
+          cycles: 12,
+          name: 'Smooth',
+          envelope: 'hann',
+          description: '<strong>Smooth:</strong> 12 complete cycles. Slightly more distinct while remaining very rounded.'
+        },
+        balanced: {
+          cycles: 8,
+          name: 'Balanced',
+          envelope: 'hann',
+          description: '<strong>Balanced:</strong> 8 complete cycles. A compromise between tonal smoothness and rhythmic definition.'
+        },
+        short: {
+          cycles: 5,
+          name: 'Short',
+          envelope: 'hann',
+          description: '<strong>Short:</strong> 5 complete cycles. More percussive, with more unavoidable spectral spread from the shorter pulse.'
+        },
+        softflat: {
+          cycles: 10,
+          name: 'Soft Center',
+          envelope: 'tukey',
+          description: '<strong>Soft Center:</strong> 10 complete cycles with a gentle fade-in, short steady center, and gentle fade-out.'
+        }
+      };
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      function selectedPreset() {
+        return presets[soundSelect.value] || presets.ultra;
+      }
+
+      function updateStatus() {
+        status.textContent = `${bpm} BPM · ${hz} Hz · ${selectedPreset().name}`;
+      }
+
+      function setBpm(value) {
+        bpm = clamp(Math.round(Number(value) || 100), 12, 200);
+        bpmValue.textContent = bpm;
+        bpmSlider.value = bpm;
+        updateStatus();
+      }
+
+      function setHz(value) {
+        hz = clamp(Math.round(Number(value) || 50), 20, 200);
+        hzValue.textContent = hz;
+        hzSlider.value = hz;
+        updateStatus();
+      }
+
+      function makeEnvelope(kind, points = 1024) {
+        const curve = new Float32Array(points);
+
+        for (let i = 0; i < points; i++) {
+          const x = i / (points - 1);
+          let y = 0;
+
+          if (kind === 'tukey') {
+            const edge = 0.30;
+
+            if (x < edge) {
+              y = 0.5 * (1 - Math.cos(Math.PI * x / edge));
+            } else if (x > 1 - edge) {
+              y = 0.5 * (1 - Math.cos(Math.PI * (1 - x) / edge));
+            } else {
+              y = 1;
+            }
+          } else {
+            y = 0.5 * (1 - Math.cos(2 * Math.PI * x));
+          }
+
+          curve[i] = y;
+        }
+
+        curve[0] = 0;
+        curve[points - 1] = 0;
+        return curve;
+      }
+
+      const hannCurve = makeEnvelope('hann');
+      const tukeyCurve = makeEnvelope('tukey');
+
+      function ensureAudio() {
+        if (audioContext) return;
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+          throw new Error('This browser does not support the Web Audio API.');
+        }
+
+        audioContext = new AudioCtx({ latencyHint: 'interactive' });
+
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = volume;
+        masterGain.connect(audioContext.destination);
+      }
+
+      function scheduleBeat(time) {
+        const preset = selectedPreset();
+        const frequency = hz;
+        const duration = preset.cycles / frequency;
+
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, time);
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.setValueCurveAtTime(
+          preset.envelope === 'tukey' ? tukeyCurve : hannCurve,
+          time,
+          duration
+        );
+        gain.gain.setValueAtTime(0, time + duration);
+
+        oscillator.connect(gain);
+        gain.connect(masterGain);
+
+        oscillator.start(time);
+        oscillator.stop(time + duration + 0.005);
+      }
+
+      function scheduler() {
+        if (!running || !audioContext) return;
+
+        const lookAheadSeconds = 0.12;
+
+        while (nextBeatTime < audioContext.currentTime + lookAheadSeconds) {
+          scheduleBeat(nextBeatTime);
+          nextBeatTime += 60 / bpm;
+        }
+      }
+
+      async function start() {
+        try {
+          ensureAudio();
+
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+          }
+
+          masterGain.gain.cancelScheduledValues(audioContext.currentTime);
+          masterGain.gain.setValueAtTime(volume, audioContext.currentTime);
+
+          running = true;
+          nextBeatTime = audioContext.currentTime + 0.05;
+
+          scheduler();
+          schedulerTimer = window.setInterval(scheduler, 25);
+
+          startButton.textContent = 'Stop Metronome';
+          startButton.classList.add('running');
+          updateStatus();
+        } catch (error) {
+          status.textContent = error?.message || 'Unable to start audio.';
+        }
+      }
+
+      function stop() {
+        running = false;
+
+        if (schedulerTimer !== null) {
+          clearInterval(schedulerTimer);
+          schedulerTimer = null;
+        }
+
+        startButton.textContent = 'Start Metronome';
+        startButton.classList.remove('running');
+        status.textContent = `Stopped · ${bpm} BPM · ${hz} Hz`;
+      }
+
+      bpmSlider.addEventListener('input', () => setBpm(bpmSlider.value));
+      minus.addEventListener('click', () => setBpm(bpm - 1));
+      plus.addEventListener('click', () => setBpm(bpm + 1));
+
+      hzSlider.addEventListener('input', () => setHz(hzSlider.value));
+
+      soundSelect.addEventListener('change', () => {
+        updateStatus();
+      });
+
+      volumeSlider.addEventListener('input', () => {
+        volume = clamp(Number(volumeSlider.value) / 100, 0.05, 1);
+        volumeValue.textContent = Math.round(volume * 100);
+
+        if (masterGain && audioContext) {
+          masterGain.gain.setTargetAtTime(volume, audioContext.currentTime, 0.01);
+        }
+      });
+
+      startButton.addEventListener('click', () => {
+        if (running) stop();
+        else start();
+      });
+    })();
+  </script>
+</body>
+</html>
